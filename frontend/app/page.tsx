@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
 export default function Home() {
   const [teamCode, setTeamCode] = useState('')
   const [error, setError] = useState('')
@@ -10,6 +12,7 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
+    // Check if team is already stored
     const storedTeam = localStorage.getItem('team')
     if (storedTeam) {
       router.push('/team')
@@ -22,7 +25,7 @@ export default function Home() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/teams/by-code/${teamCode.toUpperCase()}`)
+      const response = await fetch(`${API_URL}/teams/${teamCode.toUpperCase()}`)
       if (!response.ok) {
         setError('Team not found. Please check your team code.')
         setLoading(false)
@@ -43,15 +46,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-900">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <h1 className="text-2xl font-bold text-center mb-6">
           Basketball Playing Time Scheduler
         </h1>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="teamCode" className="block text-sm font-semibold text-gray-900 mb-2">
+            <label htmlFor="teamCode" className="block text-sm font-medium text-gray-700 mb-2">
               Enter Team Code
             </label>
             <input
@@ -59,7 +62,7 @@ export default function Home() {
               type="text"
               value={teamCode}
               onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase text-gray-900 font-medium"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
               placeholder="ABC123"
               maxLength={6}
               required
@@ -68,15 +71,13 @@ export default function Home() {
           </div>
 
           {error && (
-            <div className="text-red-700 text-sm font-medium bg-red-50 p-3 rounded-md border border-red-200">
-              {error}
-            </div>
+            <div className="text-red-600 text-sm">{error}</div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 font-semibold transition-colors"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
             {loading ? 'Loading...' : 'Access Team'}
           </button>
@@ -85,7 +86,7 @@ export default function Home() {
         <div className="mt-6 text-center">
           <button
             onClick={handleCreateTeam}
-            className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+            className="text-blue-600 hover:text-blue-700 text-sm"
           >
             Create New Team
           </button>

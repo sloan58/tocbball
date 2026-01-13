@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  adminPin  String
+  createdAt DateTime @default(now())
+  
+  players Player[]
+  coaches Coach[]
+  games   Game[]
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  teamId      String
+  name        String
+  jerseyNumber Int?
+  active      Boolean  @default(true)
+  isStar      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Coach {
+  id        String   @id @default(cuid())
+  teamId    String
+  name      String
+  email     String?
+  createdAt DateTime @default(now())
+  
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  teamId    String
+  date      DateTime
+  opponent  String?
+  attendance String  @default("[]") // JSON array of player IDs
+  schedule  String?  // JSON schedule object
+  stats     String?  // JSON stats object: { period: { playerId: { statName: count } } }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
