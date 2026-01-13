@@ -10,7 +10,7 @@ export async function GET(
     const { teamId } = await params
     const games = await db.game.findMany({
       where: { teamId },
-      orderBy: { date: 'desc' },
+      orderBy: { date: 'asc' },
     })
     return NextResponse.json(games)
   } catch (error) {
