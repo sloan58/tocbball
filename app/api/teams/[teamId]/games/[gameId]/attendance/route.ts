@@ -240,7 +240,7 @@ function adjustSchedule(
     }
   }
 
-  const lockedPeriodNumbers = new Set(
+  const lockedPeriodNumbers = new Set<number>(
     periods
       .filter((p: any) => {
         const status = p.status || (p.completed ? 'completed' : 'not_started')
