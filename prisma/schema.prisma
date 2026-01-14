@@ -13,6 +13,7 @@ datasource db {
 model Team {
   id        String   @id @default(cuid())
   name      String
+  league    String
   code      String   @unique
   adminPin  String
   createdAt DateTime @default(now())
@@ -28,7 +29,8 @@ model Player {
   name        String
   jerseyNumber Int?
   active      Boolean  @default(true)
-  isStar      Boolean  @default(false)
+  grade       Int?     // 1-5 rating system (higher = more playing time preference)
+  isPointGuard Boolean @default(false)
   createdAt   DateTime @default(now())
   
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -39,16 +41,23 @@ model Coach {
   teamId    String
   name      String
   email     String?
+  type      CoachType @default(assistant)
   createdAt DateTime @default(now())
   
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+enum CoachType {
+  head
+  assistant
 }
 
 model Game {
   id        String   @id @default(cuid())
   teamId    String
   date      DateTime
-  opponent  String?
+  location  String
+  opponent  String
   attendance String  @default("[]") // JSON array of player IDs
   schedule  String?  // JSON schedule object
   stats     String?  // JSON stats object: { period: { playerId: { statName: count } } }

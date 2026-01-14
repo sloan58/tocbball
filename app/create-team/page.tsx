@@ -6,6 +6,7 @@ import { setAdminPin } from '../lib/api'
 
 export default function CreateTeam() {
   const [name, setName] = useState('')
+  const [league, setLeague] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [createdTeam, setCreatedTeam] = useState<any>(null)
@@ -20,7 +21,7 @@ export default function CreateTeam() {
       const response = await fetch('/api/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, league }),
       })
 
       if (!response.ok) {
@@ -99,6 +100,26 @@ export default function CreateTeam() {
               disabled={loading}
             />
           </div>
+          <div>
+            <label htmlFor="league" className="block text-sm font-semibold text-gray-900 mb-2">
+              League
+            </label>
+            <input
+              id="league"
+              type="text"
+              value={league}
+              onChange={(e) => setLeague(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+              placeholder="Town Youth League"
+              required
+              disabled={loading}
+            />
+            <div className="mt-3 rounded-md border border-orange-200 bg-orange-50 px-3 py-2">
+              <p className="text-sm text-orange-800">
+                These fields will be used to generate your game forms.
+              </p>
+            </div>
+          </div>
 
           {error && (
             <div className="text-red-700 text-sm font-medium bg-red-50 p-3 rounded-md border border-red-200">
@@ -108,7 +129,7 @@ export default function CreateTeam() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !league.trim()}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 font-semibold transition-colors"
           >
             {loading ? 'Creating...' : 'Create Team'}

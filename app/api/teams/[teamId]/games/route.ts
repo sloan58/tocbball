@@ -40,16 +40,23 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 })
     }
 
-    const { date, opponent } = await request.json()
+    const { date, opponent, location } = await request.json()
     if (!date) {
       return NextResponse.json({ error: 'Game date required' }, { status: 400 })
+    }
+    if (!location) {
+      return NextResponse.json({ error: 'Game location required' }, { status: 400 })
+    }
+    if (!opponent) {
+      return NextResponse.json({ error: 'Opponent required' }, { status: 400 })
     }
 
     const game = await db.game.create({
       data: {
         teamId,
         date: new Date(date),
-        opponent: opponent || null,
+        location,
+        opponent,
         attendance: '[]',
       },
     })

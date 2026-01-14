@@ -13,6 +13,7 @@ export default function CoachesPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newCoachName, setNewCoachName] = useState('')
   const [newCoachEmail, setNewCoachEmail] = useState('')
+  const [newCoachType, setNewCoachType] = useState<'head' | 'assistant'>('assistant')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -56,6 +57,7 @@ export default function CoachesPage() {
           body: JSON.stringify({
             name: newCoachName,
             email: newCoachEmail || null,
+            type: newCoachType,
           }),
         }
       )
@@ -69,6 +71,7 @@ export default function CoachesPage() {
       setCoaches([...coaches, newCoach].sort((a, b) => a.name.localeCompare(b.name)))
       setNewCoachName('')
       setNewCoachEmail('')
+      setNewCoachType('assistant')
       setShowAddForm(false)
     } catch (err: any) {
       setError(err.message || 'Failed to add coach')
@@ -202,6 +205,20 @@ export default function CoachesPage() {
                         placeholder="jane@example.com"
                       />
                     </div>
+                    <div>
+                      <label htmlFor="coach-type" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Coach Type *
+                      </label>
+                      <select
+                        id="coach-type"
+                        value={newCoachType}
+                        onChange={(e) => setNewCoachType(e.target.value as 'head' | 'assistant')}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                      >
+                        <option value="head">Head Coach</option>
+                        <option value="assistant">Assistant Coach</option>
+                      </select>
+                    </div>
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleAddCoach(team.id)}
@@ -215,6 +232,7 @@ export default function CoachesPage() {
                           setShowAddForm(false)
                           setNewCoachName('')
                           setNewCoachEmail('')
+                          setNewCoachType('assistant')
                           setError('')
                         }}
                         className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors"
@@ -247,8 +265,13 @@ export default function CoachesPage() {
                         className="p-6 flex justify-between items-center hover:bg-gray-50 transition-colors"
                       >
                         <div>
-                          <div className="text-lg font-semibold text-gray-900">
-                            {coach.name}
+                          <div className="flex items-center gap-2">
+                            <div className="text-lg font-semibold text-gray-900">
+                              {coach.name}
+                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                              {coach.type === 'head' ? 'Head' : 'Assistant'}
+                            </span>
                           </div>
                           {coach.email && (
                             <div className="text-sm text-gray-600 mt-1">{coach.email}</div>

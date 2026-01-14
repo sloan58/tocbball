@@ -19,6 +19,7 @@ export default function GameDetailPage() {
   const [savingAttendance, setSavingAttendance] = useState(false)
   const [editingGame, setEditingGame] = useState(false)
   const [editGameDate, setEditGameDate] = useState('')
+  const [editGameLocation, setEditGameLocation] = useState('')
   const [editGameOpponent, setEditGameOpponent] = useState('')
   const [savingGame, setSavingGame] = useState(false)
   const [updatingPeriod, setUpdatingPeriod] = useState<number | null>(null)
@@ -94,6 +95,7 @@ export default function GameDetailPage() {
       const hours = String(date.getHours()).padStart(2, '0')
       const minutes = String(date.getMinutes()).padStart(2, '0')
       setEditGameDate(`${year}-${month}-${day}T${hours}:${minutes}`)
+      setEditGameLocation(gameData.location || '')
       setEditGameOpponent(gameData.opponent || '')
     } catch (err) {
       console.error('Error loading game data:', err)
@@ -184,7 +186,8 @@ export default function GameDetailPage() {
           method: 'PUT',
           body: JSON.stringify({
             date: editGameDate,
-            opponent: editGameOpponent || null,
+            location: editGameLocation,
+            opponent: editGameOpponent,
           }),
         }
       )
@@ -301,9 +304,8 @@ export default function GameDetailPage() {
                   hour: 'numeric',
                   minute: '2-digit',
                 })}
-                {game.opponent && (
-                  <span className="ml-2 font-semibold text-gray-900">• vs {game.opponent}</span>
-                )}
+                <span className="ml-2">• {game.location}</span>
+                <span className="ml-2 font-semibold text-gray-900">• vs {game.opponent}</span>
               </p>
             </div>
           </div>
@@ -365,8 +367,22 @@ export default function GameDetailPage() {
                           />
                         </div>
                         <div>
+                          <label htmlFor="edit-location" className="block text-sm font-semibold text-gray-900 mb-2">
+                            Location *
+                          </label>
+                          <input
+                            id="edit-location"
+                            type="text"
+                            value={editGameLocation}
+                            onChange={(e) => setEditGameLocation(e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                            placeholder="Main Gym"
+                            required
+                          />
+                        </div>
+                        <div>
                           <label htmlFor="edit-opponent" className="block text-sm font-semibold text-gray-900 mb-2">
-                            Opponent (optional)
+                            Opponent *
                           </label>
                           <input
                             id="edit-opponent"
@@ -375,12 +391,13 @@ export default function GameDetailPage() {
                             onChange={(e) => setEditGameOpponent(e.target.value)}
                             className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
                             placeholder="Team Name"
+                            required
                           />
                         </div>
                         <div className="flex gap-3">
                           <button
                             onClick={() => handleUpdateGame(team.id)}
-                            disabled={savingGame || !editGameDate}
+                            disabled={savingGame || !editGameDate || !editGameLocation.trim() || !editGameOpponent.trim()}
                             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold transition-colors"
                           >
                             {savingGame ? 'Saving...' : 'Save Changes'}
@@ -396,6 +413,7 @@ export default function GameDetailPage() {
                               const hours = String(date.getHours()).padStart(2, '0')
                               const minutes = String(date.getMinutes()).padStart(2, '0')
                               setEditGameDate(`${year}-${month}-${day}T${hours}:${minutes}`)
+                              setEditGameLocation(game.location || '')
                               setEditGameOpponent(game.opponent || '')
                               setError('')
                             }}
@@ -430,17 +448,19 @@ export default function GameDetailPage() {
                               })}
                             </span>
                           </div>
-                          {game.opponent && (
-                            <div>
-                              <span className="text-sm font-semibold text-gray-600">Opponent:</span>
-                              <span className="ml-2 text-gray-900 font-medium">{game.opponent}</span>
-                            </div>
-                          )}
+                          <div>
+                            <span className="text-sm font-semibold text-gray-600">Location:</span>
+                            <span className="ml-2 text-gray-900 font-medium">{game.location}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-gray-600">Opponent:</span>
+                            <span className="ml-2 text-gray-900 font-medium">{game.opponent}</span>
+                          </div>
                         </div>
                         <button
                           onClick={() => {
                             // Ensure form values are set when opening edit mode
-                            if (!editGameDate && game) {
+                            if ((!editGameDate || !editGameLocation) && game) {
                               const date = new Date(game.date)
                               const year = date.getFullYear()
                               const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -448,6 +468,7 @@ export default function GameDetailPage() {
                               const hours = String(date.getHours()).padStart(2, '0')
                               const minutes = String(date.getMinutes()).padStart(2, '0')
                               setEditGameDate(`${year}-${month}-${day}T${hours}:${minutes}`)
+                              setEditGameLocation(game.location || '')
                               setEditGameOpponent(game.opponent || '')
                             }
                             setEditingGame(true)
@@ -523,9 +544,9 @@ export default function GameDetailPage() {
 
               {/* Attendance Section */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                <button
+                <div
                   onClick={() => setExpandedSections(prev => ({ ...prev, attendance: !prev.attendance }))}
-                  className="w-full p-6 border-b border-gray-200 flex justify-between items-center hover:bg-gray-50 transition-colors"
+                  className="w-full p-6 border-b border-gray-200 flex justify-between items-center hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex-1 flex justify-between items-center">
                     <div>
@@ -550,7 +571,7 @@ export default function GameDetailPage() {
                     <span className="text-2xl text-gray-500 ml-4">
                       {expandedSections.attendance ? '−' : '+'}
                     </span>
-                </button>
+                </div>
                 {expandedSections.attendance && (
                   <div className="p-6">
                   {players.length === 0 ? (
@@ -690,12 +711,19 @@ export default function GameDetailPage() {
                                             : 'bg-white border-gray-200'
                                         }`}
                                       >
-                                        <div className={`font-medium text-sm ${
-                                          periodStatus === 'completed' ? 'text-gray-600' : 'text-gray-900'
-                                        }`}>
-                                          {player?.name || 'Unknown Player'}
-                                          {periodStatus === 'completed' && (
-                                            <span className="ml-2 text-green-600">✓</span>
+                                        <div className="flex items-center gap-2">
+                                          <div className={`font-medium text-sm ${
+                                            periodStatus === 'completed' ? 'text-gray-600' : 'text-gray-900'
+                                          }`}>
+                                            {player?.name || 'Unknown Player'}
+                                            {periodStatus === 'completed' && (
+                                              <span className="ml-2 text-green-600">✓</span>
+                                            )}
+                                          </div>
+                                          {player?.isPointGuard && (
+                                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                                              PG
+                                            </span>
                                           )}
                                         </div>
                                         {player?.jerseyNumber && (
@@ -775,12 +803,19 @@ export default function GameDetailPage() {
                                             : 'bg-white border-gray-200'
                                         }`}
                                       >
-                                        <div className={`font-medium text-sm ${
-                                          periodStatus === 'completed' ? 'text-gray-600' : 'text-gray-900'
-                                        }`}>
-                                          {player?.name || 'Unknown Player'}
-                                          {periodStatus === 'completed' && (
-                                            <span className="ml-2 text-green-600">✓</span>
+                                        <div className="flex items-center gap-2">
+                                          <div className={`font-medium text-sm ${
+                                            periodStatus === 'completed' ? 'text-gray-600' : 'text-gray-900'
+                                          }`}>
+                                            {player?.name || 'Unknown Player'}
+                                            {periodStatus === 'completed' && (
+                                              <span className="ml-2 text-green-600">✓</span>
+                                            )}
+                                          </div>
+                                          {player?.isPointGuard && (
+                                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                                              PG
+                                            </span>
                                           )}
                                         </div>
                                         {player?.jerseyNumber && (

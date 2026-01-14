@@ -5,9 +5,12 @@ import { generateTeamCode, generateAdminPin } from '@/lib/team-code'
 // POST /api/teams - Create a new team
 export async function POST(request: NextRequest) {
   try {
-    const { name } = await request.json()
+    const { name, league } = await request.json()
     if (!name) {
       return NextResponse.json({ error: 'Team name required' }, { status: 400 })
+    }
+    if (!league) {
+      return NextResponse.json({ error: 'League required' }, { status: 400 })
     }
 
     // Generate unique team code
@@ -24,6 +27,7 @@ export async function POST(request: NextRequest) {
     const team = await db.team.create({
       data: {
         name,
+        league,
         code,
         adminPin,
       },

@@ -70,7 +70,11 @@ export default function TeamPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{team.name}</h1>
-              <p className="text-sm text-gray-600 mt-1">Code: <span className="font-mono font-semibold text-gray-900">{team.code}</span></p>
+              <div className="text-sm text-gray-600 mt-1">
+                <span>League: <span className="font-semibold text-gray-900">{team.league}</span></span>
+                <span className="mx-2">•</span>
+                <span>Code: <span className="font-mono font-semibold text-gray-900">{team.code}</span></span>
+              </div>
             </div>
             <button
               onClick={handleLogout}
@@ -138,9 +142,8 @@ export default function TeamPage() {
                         <span className="text-gray-900 font-medium">
                           {new Date(game.date).toLocaleDateString()}
                         </span>
-                        {game.opponent && (
-                          <span className="ml-2 text-sm text-gray-600">vs {game.opponent}</span>
-                        )}
+                        <span className="ml-2 text-sm text-gray-600">• {game.location}</span>
+                        <span className="ml-2 text-sm text-gray-600">• vs {game.opponent}</span>
                         {hasSchedule && (
                           <span className="ml-3 text-xs text-green-600 font-medium">✓ Schedule ready</span>
                         )}

@@ -40,9 +40,15 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 })
     }
 
-    const { name, jerseyNumber, isStar } = await request.json()
+    const { name, jerseyNumber, grade, isPointGuard } = await request.json()
     if (!name) {
       return NextResponse.json({ error: 'Player name required' }, { status: 400 })
+    }
+
+    // Validate grade is 1-5 or null
+    const gradeValue = grade ? parseInt(grade) : null
+    if (gradeValue !== null && (gradeValue < 1 || gradeValue > 5)) {
+      return NextResponse.json({ error: 'Grade must be between 1 and 5' }, { status: 400 })
     }
 
     const player = await db.player.create({
@@ -50,7 +56,8 @@ export async function POST(
         teamId,
         name,
         jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-        isStar: isStar === true || isStar === 'true',
+        grade: gradeValue,
+        isPointGuard: Boolean(isPointGuard),
       },
     })
 

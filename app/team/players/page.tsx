@@ -13,14 +13,24 @@ export default function PlayersPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerJersey, setNewPlayerJersey] = useState('')
-  const [newPlayerIsStar, setNewPlayerIsStar] = useState(false)
+  const [newPlayerGrade, setNewPlayerGrade] = useState<number | ''>('')
+  const [newPlayerIsPointGuard, setNewPlayerIsPointGuard] = useState(false)
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
   const [editPlayerName, setEditPlayerName] = useState('')
   const [editPlayerJersey, setEditPlayerJersey] = useState('')
-  const [editPlayerIsStar, setEditPlayerIsStar] = useState(false)
+  const [editPlayerGrade, setEditPlayerGrade] = useState<number | ''>('')
+  const [editPlayerIsPointGuard, setEditPlayerIsPointGuard] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+
+  const sortPlayersByNumber = (list: any[]) =>
+    [...list].sort((a, b) => {
+      const numberA = a.jerseyNumber ?? Number.POSITIVE_INFINITY
+      const numberB = b.jerseyNumber ?? Number.POSITIVE_INFINITY
+      if (numberA !== numberB) return numberA - numberB
+      return a.name.localeCompare(b.name)
+    })
 
   useEffect(() => {
     const storedTeam = localStorage.getItem('team')
@@ -39,7 +49,7 @@ export default function PlayersPage() {
       const response = await fetch(`/api/teams/${teamId}/players`)
       if (!response.ok) throw new Error('Failed to load players')
       const data = await response.json()
-      setPlayers(data)
+      setPlayers(sortPlayersByNumber(data))
     } catch (err) {
       console.error('Error loading players:', err)
       setError('Failed to load players')
@@ -61,7 +71,8 @@ export default function PlayersPage() {
           body: JSON.stringify({
             name: newPlayerName,
             jerseyNumber: newPlayerJersey || null,
-            isStar: newPlayerIsStar,
+            grade: newPlayerGrade || null,
+            isPointGuard: newPlayerIsPointGuard,
           }),
         }
       )
@@ -72,10 +83,11 @@ export default function PlayersPage() {
       }
 
       const newPlayer = await response.json()
-      setPlayers([...players, newPlayer].sort((a, b) => a.name.localeCompare(b.name)))
+      setPlayers(sortPlayersByNumber([...players, newPlayer]))
       setNewPlayerName('')
       setNewPlayerJersey('')
-      setNewPlayerIsStar(false)
+      setNewPlayerGrade('')
+      setNewPlayerIsPointGuard(false)
       setShowAddForm(false)
     } catch (err: any) {
       setError(err.message || 'Failed to add player')
@@ -88,7 +100,8 @@ export default function PlayersPage() {
     setEditingPlayerId(player.id)
     setEditPlayerName(player.name)
     setEditPlayerJersey(player.jerseyNumber?.toString() || '')
-    setEditPlayerIsStar(player.isStar || false)
+    setEditPlayerGrade(player.grade || '')
+    setEditPlayerIsPointGuard(player.isPointGuard || false)
     setError('')
   }
 
@@ -105,7 +118,8 @@ export default function PlayersPage() {
           body: JSON.stringify({
             name: editPlayerName,
             jerseyNumber: editPlayerJersey || null,
-            isStar: editPlayerIsStar,
+            grade: editPlayerGrade || null,
+            isPointGuard: editPlayerIsPointGuard,
           }),
         }
       )
@@ -117,14 +131,13 @@ export default function PlayersPage() {
 
       const updatedPlayer = await response.json()
       setPlayers(
-        players
-          .map((p) => (p.id === playerId ? updatedPlayer : p))
-          .sort((a, b) => a.name.localeCompare(b.name))
+        sortPlayersByNumber(players.map((p) => (p.id === playerId ? updatedPlayer : p)))
       )
       setEditingPlayerId(null)
       setEditPlayerName('')
       setEditPlayerJersey('')
-      setEditPlayerIsStar(false)
+      setEditPlayerGrade('')
+      setEditPlayerIsPointGuard(false)
     } catch (err: any) {
       setError(err.message || 'Failed to update player')
     } finally {
@@ -259,16 +272,35 @@ export default function PlayersPage() {
                         max="99"
                       />
                     </div>
+                    <div>
+                      <label htmlFor="grade" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Grade (1-5, optional)
+                      </label>
+                      <select
+                        id="grade"
+                        value={newPlayerGrade}
+                        onChange={(e) => setNewPlayerGrade(e.target.value ? parseInt(e.target.value) : '')}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                      >
+                        <option value="">No grade</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                      </select>
+                      <p className="text-xs text-gray-600 mt-1">Higher grade = preference for extra periods</p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <input
-                        id="new-is-star"
+                        id="new-is-pg"
                         type="checkbox"
-                        checked={newPlayerIsStar}
-                        onChange={(e) => setNewPlayerIsStar(e.target.checked)}
-                        className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500"
+                        checked={newPlayerIsPointGuard}
+                        onChange={(e) => setNewPlayerIsPointGuard(e.target.checked)}
+                        className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <label htmlFor="new-is-star" className="text-sm font-semibold text-gray-900">
-                        Star Player (gets preference for extra periods)
+                      <label htmlFor="new-is-pg" className="text-sm font-semibold text-gray-900">
+                        Point Guard (ensures at least one PG on floor)
                       </label>
                     </div>
                     <div className="flex gap-3">
@@ -284,7 +316,8 @@ export default function PlayersPage() {
                           setShowAddForm(false)
                           setNewPlayerName('')
                           setNewPlayerJersey('')
-                          setNewPlayerIsStar(false)
+                          setNewPlayerGrade('')
+                          setNewPlayerIsPointGuard(false)
                           setError('')
                         }}
                         className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors"
@@ -346,16 +379,35 @@ export default function PlayersPage() {
                                   max="99"
                                 />
                               </div>
+                              <div>
+                                <label htmlFor={`edit-grade-${player.id}`} className="block text-sm font-semibold text-gray-900 mb-2">
+                                  Grade (1-5, optional)
+                                </label>
+                                <select
+                                  id={`edit-grade-${player.id}`}
+                                  value={editPlayerGrade}
+                                  onChange={(e) => setEditPlayerGrade(e.target.value ? parseInt(e.target.value) : '')}
+                                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                                >
+                                  <option value="">No grade</option>
+                                  <option value="1">1</option>
+                                  <option value="2">2</option>
+                                  <option value="3">3</option>
+                                  <option value="4">4</option>
+                                  <option value="5">5</option>
+                                </select>
+                                <p className="text-xs text-gray-600 mt-1">Higher grade = preference for extra periods</p>
+                              </div>
                               <div className="flex items-center gap-2">
                                 <input
-                                  id={`edit-is-star-${player.id}`}
+                                  id={`edit-is-pg-${player.id}`}
                                   type="checkbox"
-                                  checked={editPlayerIsStar}
-                                  onChange={(e) => setEditPlayerIsStar(e.target.checked)}
-                                  className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500"
+                                  checked={editPlayerIsPointGuard}
+                                  onChange={(e) => setEditPlayerIsPointGuard(e.target.checked)}
+                                  className="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <label htmlFor={`edit-is-star-${player.id}`} className="text-sm font-semibold text-gray-900">
-                                  Star Player (gets preference for extra periods)
+                                <label htmlFor={`edit-is-pg-${player.id}`} className="text-sm font-semibold text-gray-900">
+                                  Point Guard (ensures at least one PG on floor)
                                 </label>
                               </div>
                               <div className="flex gap-3">
@@ -371,7 +423,8 @@ export default function PlayersPage() {
                                     setEditingPlayerId(null)
                                     setEditPlayerName('')
                                     setEditPlayerJersey('')
-                                    setEditPlayerIsStar(false)
+                                    setEditPlayerGrade('')
+                                    setEditPlayerIsPointGuard(false)
                                     setError('')
                                   }}
                                   className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors"
@@ -384,15 +437,22 @@ export default function PlayersPage() {
                         ) : (
                           <div className="p-6 flex justify-between items-center hover:bg-gray-50 transition-colors">
                             <div>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 flex-wrap">
                                 <span className="text-lg font-semibold text-gray-900">
                                   {player.name}
                                 </span>
-                                {player.isStar && (
-                                  <span className="text-yellow-500 text-xl" title="Star Player">★</span>
+                                {player.grade && (
+                                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold" title="Grade">
+                                    Grade {player.grade}
+                                  </span>
+                                )}
+                                {player.isPointGuard && (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-semibold" title="Point Guard">
+                                    PG
+                                  </span>
                                 )}
                                 {player.jerseyNumber && (
-                                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
+                                  <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-bold">
                                     #{player.jerseyNumber}
                                   </span>
                                 )}

@@ -12,6 +12,7 @@ export default function GamesPage() {
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newGameDate, setNewGameDate] = useState('')
+  const [newGameLocation, setNewGameLocation] = useState('')
   const [newGameOpponent, setNewGameOpponent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -55,7 +56,8 @@ export default function GamesPage() {
           method: 'POST',
           body: JSON.stringify({
             date: newGameDate,
-            opponent: newGameOpponent || null,
+            location: newGameLocation,
+            opponent: newGameOpponent,
           }),
         }
       )
@@ -68,6 +70,7 @@ export default function GamesPage() {
       const newGame = await response.json()
       setGames([newGame, ...games])
       setNewGameDate('')
+      setNewGameLocation('')
       setNewGameOpponent('')
       setShowAddForm(false)
       router.push(`/team/games/${newGame.id}`)
@@ -172,7 +175,7 @@ export default function GamesPage() {
                     </div>
                     <div>
                       <label htmlFor="opponent" className="block text-sm font-semibold text-gray-900 mb-2">
-                        Opponent (optional)
+                        Opponent *
                       </label>
                       <input
                         id="opponent"
@@ -181,12 +184,27 @@ export default function GamesPage() {
                         onChange={(e) => setNewGameOpponent(e.target.value)}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
                         placeholder="Team Name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Location *
+                      </label>
+                      <input
+                        id="location"
+                        type="text"
+                        value={newGameLocation}
+                        onChange={(e) => setNewGameLocation(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                        placeholder="Main Gym"
+                        required
                       />
                     </div>
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleAddGame(team.id)}
-                        disabled={submitting || !newGameDate}
+                        disabled={submitting || !newGameDate || !newGameLocation.trim() || !newGameOpponent.trim()}
                         className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold transition-colors"
                       >
                         {submitting ? 'Creating...' : 'Create Game'}
@@ -195,6 +213,7 @@ export default function GamesPage() {
                         onClick={() => {
                           setShowAddForm(false)
                           setNewGameDate('')
+                          setNewGameLocation('')
                           setNewGameOpponent('')
                           setError('')
                         }}
@@ -246,9 +265,8 @@ export default function GamesPage() {
                                   hour: 'numeric',
                                   minute: '2-digit',
                                 })}
-                                {game.opponent && (
-                                  <span className="ml-2">• vs {game.opponent}</span>
-                                )}
+                                <span className="ml-2">• {game.location}</span>
+                                <span className="ml-2">• vs {game.opponent}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-4">

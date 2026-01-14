@@ -40,9 +40,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 })
     }
 
-    const { name, email } = await request.json()
+    const { name, email, type } = await request.json()
     if (!name) {
       return NextResponse.json({ error: 'Coach name required' }, { status: 400 })
+    }
+    if (type !== 'head' && type !== 'assistant') {
+      return NextResponse.json({ error: 'Coach type must be head or assistant' }, { status: 400 })
     }
 
     const coach = await db.coach.create({
@@ -50,6 +53,7 @@ export async function POST(
         teamId,
         name,
         email: email || null,
+        type,
       },
     })
 
