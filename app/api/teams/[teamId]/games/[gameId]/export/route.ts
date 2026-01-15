@@ -290,10 +290,7 @@ export async function GET(
 
     zip.file('word/document.xml', updatedXml)
     const outputBuffer = zip.generate({ type: 'nodebuffer' })
-    const body = outputBuffer.buffer.slice(
-      outputBuffer.byteOffset,
-      outputBuffer.byteOffset + outputBuffer.byteLength
-    )
+    const body = new Uint8Array(outputBuffer)
 
     return new NextResponse(body, {
       status: 200,
