@@ -27,7 +27,82 @@ const replaceAfterLabel = (xml: string, label: string, value: string) => {
     's'
   )
   if (!pattern.test(xml)) return xml
-  return xml.replace(pattern, `$1<w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`)
+  return xml.replace(
+    pattern,
+    `$1<w:tab/><w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`
+  )
+}
+
+const replaceAfterLabelAtIndex = (
+  xml: string,
+  label: string,
+  value: string,
+  index: number
+) => {
+  const pattern = new RegExp(
+    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
+    's'
+  )
+  let count = 0
+  return xml.replace(pattern, (match, prefix) => {
+    if (count !== index) {
+      count += 1
+      return match
+    }
+    count += 1
+    return `${prefix}<w:tab/><w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`
+  })
+}
+
+const setCellText = (cellXml: string, text: string) => {
+  const textTag = `<w:t${text.startsWith(' ') ? ' xml:space="preserve"' : ''}>${escapeXml(
+    text
+  )}</w:t>`
+  const textPattern = /<w:t(?=[\s>])[^>]*>.*?<\/w:t>/s
+  if (textPattern.test(cellXml)) {
+    if (!text) {
+      return cellXml.replace(textPattern, '<w:t></w:t>')
+    }
+    return cellXml.replace(textPattern, textTag)
+  }
+  if (!text) return cellXml
+  return cellXml.replace(/<\/w:p>/, `<w:r>${textTag}</w:r></w:p>`)
+}
+
+const fillPlayerRow = (
+  rowXml: string,
+  player: { id: string; name: string; jerseyNumber: number | null } | null,
+  periodsByPlayer: Map<string, Set<number>>,
+  jerseyNumberOverride?: number
+) => {
+  const cells = rowXml.match(/<w:tc[\s\S]*?<\/w:tc>/g)
+  if (!cells || cells.length < 10) return rowXml
+
+  const jerseyNumber =
+    typeof jerseyNumberOverride === 'number'
+      ? jerseyNumberOverride
+      : player?.jerseyNumber ?? null
+  const jersey = jerseyNumber ? String(jerseyNumber) : ''
+  cells[0] = setCellText(cells[0], jersey)
+  cells[1] = setCellText(cells[1], player?.name || '')
+
+  const playerPeriods = player ? periodsByPlayer.get(player.id) : undefined
+  for (let i = 0; i < 8; i += 1) {
+    const periodNumber = i + 1
+    const mark = playerPeriods?.has(periodNumber) ? 'X' : ''
+    cells[2 + i] = setCellText(cells[2 + i], mark)
+  }
+
+  let cellIndex = 0
+  return rowXml.replace(/<w:tc[\s\S]*?<\/w:tc>/g, () => cells[cellIndex++] ?? '')
+}
+
+const isPlayerRow = (rowXml: string) => {
+  if (rowXml.includes('Quarter') || rowXml.includes('No.</w:t>')) return false
+  const cells = rowXml.match(/<w:tc[\s\S]*?<\/w:tc>/g)
+  if (!cells || cells.length < 10) return false
+  const firstCell = cells[0]
+  return /<w:t[^>]*>\d+<\/w:t>/.test(firstCell)
 }
 
 // GET /api/teams/[teamId]/games/[gameId]/export
@@ -52,11 +127,24 @@ export async function GET(
 
     const game = await db.game.findUnique({
       where: { id: gameId },
-      select: { date: true, opponent: true, location: true },
+      select: { date: true, opponent: true, location: true, attendance: true, schedule: true },
     })
     if (!game) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
+
+    const [players, coaches] = await Promise.all([
+      db.player.findMany({
+        where: { teamId, active: true },
+        select: { id: true, name: true, jerseyNumber: true },
+        orderBy: [{ jerseyNumber: 'asc' }, { name: 'asc' }],
+      }),
+      db.coach.findMany({
+        where: { teamId },
+        select: { name: true, type: true },
+        orderBy: { name: 'asc' },
+      }),
+    ])
 
     const templateBuffer = await fs.readFile(TEMPLATE_PATH)
     const zip = new PizZip(templateBuffer)
@@ -67,12 +155,77 @@ export async function GET(
 
     const formattedDate = new Date(game.date).toLocaleDateString('en-US')
 
+    const attendance = Array.isArray(game.attendance)
+      ? game.attendance
+      : (JSON.parse(game.attendance || '[]') as string[])
+    const schedule =
+      typeof game.schedule === 'string' ? JSON.parse(game.schedule) : game.schedule
+
+    const periodsByPlayer = new Map<string, Set<number>>()
+    if (schedule?.periods) {
+      schedule.periods.forEach((period: any) => {
+        period.players.forEach((playerId: string) => {
+          if (!periodsByPlayer.has(playerId)) {
+            periodsByPlayer.set(playerId, new Set())
+          }
+          periodsByPlayer.get(playerId)!.add(period.period)
+        })
+      })
+    }
+
+    const headCoach = coaches.find((coach) => coach.type === 'head')?.name || ''
+    const assistantCoaches = coaches
+      .filter((coach) => coach.type === 'assistant')
+      .map((coach) => coach.name)
+
+    const absentPlayers =
+      attendance.length > 0
+        ? players
+            .filter((player) => !attendance.includes(player.id))
+            .map((player) =>
+              player.jerseyNumber ? `${player.name} (#${player.jerseyNumber})` : player.name
+            )
+            .join(', ')
+        : ''
+
     let updatedXml = documentXml
     updatedXml = replaceAfterLabel(updatedXml, 'TEAM', team.name)
     updatedXml = replaceAfterLabel(updatedXml, 'OPPOSING TEAM', game.opponent)
     updatedXml = replaceAfterLabel(updatedXml, 'LEAGUE', team.league)
     updatedXml = replaceAfterLabel(updatedXml, 'LOCATION', game.location)
     updatedXml = replaceAfterLabel(updatedXml, 'DATE', formattedDate)
+    updatedXml = replaceAfterLabel(updatedXml, 'ABSENT PLAYERS', absentPlayers)
+
+    updatedXml = replaceAfterLabelAtIndex(updatedXml, '(head)', headCoach, 0)
+    updatedXml = replaceAfterLabelAtIndex(
+      updatedXml,
+      '(asst)',
+      assistantCoaches[0] || '',
+      0
+    )
+    updatedXml = replaceAfterLabelAtIndex(
+      updatedXml,
+      '(asst)',
+      assistantCoaches[1] || '',
+      1
+    )
+
+    const jerseySlots = [1, 2, 3, 4, 5, 10, 11, 12, 13, 14]
+    const playersByNumber = new Map<number, (typeof players)[number]>()
+    players.forEach((player) => {
+      if (typeof player.jerseyNumber === 'number') {
+        playersByNumber.set(player.jerseyNumber, player)
+      }
+    })
+
+    let jerseyIndex = 0
+    updatedXml = updatedXml.replace(/<w:tr[\s\S]*?<\/w:tr>/g, (rowXml) => {
+      if (!isPlayerRow(rowXml)) return rowXml
+      const jerseyNumber = jerseySlots[jerseyIndex]
+      const player = jerseyNumber ? playersByNumber.get(jerseyNumber) ?? null : null
+      jerseyIndex += 1
+      return fillPlayerRow(rowXml, player, periodsByPlayer, jerseyNumber)
+    })
 
     zip.file('word/document.xml', updatedXml)
     const outputBuffer = zip.generate({ type: 'nodebuffer' })
