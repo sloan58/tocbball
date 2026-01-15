@@ -290,8 +290,12 @@ export async function GET(
 
     zip.file('word/document.xml', updatedXml)
     const outputBuffer = zip.generate({ type: 'nodebuffer' })
+    const body = outputBuffer.buffer.slice(
+      outputBuffer.byteOffset,
+      outputBuffer.byteOffset + outputBuffer.byteLength
+    )
 
-    return new NextResponse(outputBuffer, {
+    return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type':
