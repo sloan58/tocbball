@@ -27,13 +27,31 @@ const replaceAfterLabel = (xml: string, label: string, value: string) => {
     's'
   )
   if (!pattern.test(xml)) return xml
-  return xml.replace(
-    pattern,
-    `$1<w:tab/><w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`
-  )
+  return xml.replace(pattern, `$1<w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`)
 }
 
 const replaceAfterLabelAtIndex = (
+  xml: string,
+  label: string,
+  value: string,
+  index: number
+) => {
+  const pattern = new RegExp(
+    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
+    's'
+  )
+  let count = 0
+  return xml.replace(pattern, (match, prefix) => {
+    if (count !== index) {
+      count += 1
+      return match
+    }
+    count += 1
+    return `${prefix}<w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`
+  })
+}
+
+const replaceAfterLabelAtIndexWithTab = (
   xml: string,
   label: string,
   value: string,
@@ -66,7 +84,11 @@ const setCellText = (cellXml: string, text: string) => {
     return cellXml.replace(textPattern, textTag)
   }
   if (!text) return cellXml
-  return cellXml.replace(/<\/w:p>/, `<w:r>${textTag}</w:r></w:p>`)
+  const paragraphRprMatch = cellXml.match(
+    /<w:pPr>[\s\S]*?<w:rPr>([\s\S]*?)<\/w:rPr>[\s\S]*?<\/w:pPr>/
+  )
+  const runProps = paragraphRprMatch ? `<w:rPr>${paragraphRprMatch[1]}</w:rPr>` : ''
+  return cellXml.replace(/<\/w:p>/, `<w:r>${runProps}${textTag}</w:r></w:p>`)
 }
 
 const fillPlayerRow = (
@@ -95,6 +117,17 @@ const fillPlayerRow = (
 
   let cellIndex = 0
   return rowXml.replace(/<w:tc[\s\S]*?<\/w:tc>/g, () => cells[cellIndex++] ?? '')
+}
+
+const tightenGymAttendantLine = (xml: string) => {
+  const pattern = /<w:p[\s\S]*?Gym Attendant\/Scorekeeper[\s\S]*?<\/w:p>/
+  if (!pattern.test(xml)) return xml
+  return xml.replace(pattern, (paragraph) => {
+    let updated = paragraph.replace(/w:line="360"/g, 'w:line="300"')
+    updated = updated.replace(/<w:sz w:val="18"\/>/g, '<w:sz w:val="17"/>')
+    updated = updated.replace(/<w:szCs w:val="18"\/>/g, '<w:szCs w:val="17"/>')
+    return updated
+  })
 }
 
 const isPlayerRow = (rowXml: string) => {
@@ -196,14 +229,14 @@ export async function GET(
     updatedXml = replaceAfterLabel(updatedXml, 'DATE', formattedDate)
     updatedXml = replaceAfterLabel(updatedXml, 'ABSENT PLAYERS', absentPlayers)
 
-    updatedXml = replaceAfterLabelAtIndex(updatedXml, '(head)', headCoach, 0)
-    updatedXml = replaceAfterLabelAtIndex(
+    updatedXml = replaceAfterLabelAtIndexWithTab(updatedXml, '(head)', headCoach, 0)
+    updatedXml = replaceAfterLabelAtIndexWithTab(
       updatedXml,
       '(asst)',
       assistantCoaches[0] || '',
       0
     )
-    updatedXml = replaceAfterLabelAtIndex(
+    updatedXml = replaceAfterLabelAtIndexWithTab(
       updatedXml,
       '(asst)',
       assistantCoaches[1] || '',
@@ -226,6 +259,9 @@ export async function GET(
       jerseyIndex += 1
       return fillPlayerRow(rowXml, player, periodsByPlayer, jerseyNumber)
     })
+
+    updatedXml = tightenGymAttendantLine(updatedXml)
+
 
     zip.file('word/document.xml', updatedXml)
     const outputBuffer = zip.generate({ type: 'nodebuffer' })
