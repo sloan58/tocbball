@@ -55,7 +55,8 @@ const replaceAfterLabelAtIndexWithTab = (
   xml: string,
   label: string,
   value: string,
-  index: number
+  index: number,
+  leadingSpace = true
 ) => {
   const pattern = new RegExp(
     `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
@@ -68,7 +69,27 @@ const replaceAfterLabelAtIndexWithTab = (
       return match
     }
     count += 1
-    return `${prefix}<w:tab/><w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`
+    const spacer = leadingSpace ? ' ' : ''
+    return `${prefix}<w:t xml:space="preserve">${spacer}${escapeXml(value)}</w:t><w:tab/>`
+  })
+}
+
+const insertAbsentPlayersLine = (xml: string, value: string) => {
+  if (!value) return xml
+  const paragraphPattern = /<w:p[\s\S]*?\(head\):[\s\S]*?<\/w:p>/
+  return xml.replace(paragraphPattern, (paragraph) => {
+    const headIndex = paragraph.indexOf('(head):')
+    if (headIndex === -1) return paragraph
+    const beforeHead = paragraph.slice(0, headIndex)
+    const afterHead = paragraph.slice(headIndex)
+    const underlineTabPattern =
+      /(<w:r[^>]*><w:rPr>[\s\S]*?<w:u[^>]*\/>[\s\S]*?<\/w:rPr>)<w:tab\/>/
+    if (!underlineTabPattern.test(beforeHead)) return paragraph
+    const updatedBefore = beforeHead.replace(
+      underlineTabPattern,
+      `$1<w:t xml:space="preserve">${escapeXml(value)}</w:t><w:tab/>`
+    )
+    return `${updatedBefore}${afterHead}`
   })
 }
 
@@ -227,20 +248,26 @@ export async function GET(
     updatedXml = replaceAfterLabel(updatedXml, 'LEAGUE', team.league)
     updatedXml = replaceAfterLabel(updatedXml, 'LOCATION', game.location)
     updatedXml = replaceAfterLabel(updatedXml, 'DATE', formattedDate)
-    updatedXml = replaceAfterLabel(updatedXml, 'ABSENT PLAYERS', absentPlayers)
-
-    updatedXml = replaceAfterLabelAtIndexWithTab(updatedXml, '(head)', headCoach, 0)
+    updatedXml = replaceAfterLabelAtIndexWithTab(
+      updatedXml,
+      '(head)',
+      headCoach,
+      0,
+      false
+    )
     updatedXml = replaceAfterLabelAtIndexWithTab(
       updatedXml,
       '(asst)',
       assistantCoaches[0] || '',
-      0
+      0,
+      false
     )
     updatedXml = replaceAfterLabelAtIndexWithTab(
       updatedXml,
       '(asst)',
       assistantCoaches[1] || '',
-      1
+      1,
+      false
     )
 
     const jerseySlots = [1, 2, 3, 4, 5, 10, 11, 12, 13, 14]
@@ -260,6 +287,7 @@ export async function GET(
       return fillPlayerRow(rowXml, player, periodsByPlayer, jerseyNumber)
     })
 
+    updatedXml = insertAbsentPlayersLine(updatedXml, absentPlayers)
     updatedXml = tightenGymAttendantLine(updatedXml)
 
 
