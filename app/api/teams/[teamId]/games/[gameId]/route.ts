@@ -44,7 +44,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 })
     }
 
-    const { date, opponent, location } = await request.json()
+    const { date, opponent, location, venue } = await request.json()
     if (!date) {
       return NextResponse.json({ error: 'Game date required' }, { status: 400 })
     }
@@ -55,12 +55,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Opponent required' }, { status: 400 })
     }
 
+    const venueValue = venue === 'away' ? 'away' : 'home'
+
     const game = await db.game.update({
       where: { id: gameId },
       data: {
         date: new Date(date),
         location,
         opponent,
+        venue: venueValue,
       },
     })
 

@@ -14,6 +14,7 @@ export default function GamesPage() {
   const [newGameDate, setNewGameDate] = useState('')
   const [newGameLocation, setNewGameLocation] = useState('')
   const [newGameOpponent, setNewGameOpponent] = useState('')
+  const [newGameVenue, setNewGameVenue] = useState<'home' | 'away'>('home')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -58,6 +59,7 @@ export default function GamesPage() {
             date: newGameDate,
             location: newGameLocation,
             opponent: newGameOpponent,
+            venue: newGameVenue,
           }),
         }
       )
@@ -72,6 +74,7 @@ export default function GamesPage() {
       setNewGameDate('')
       setNewGameLocation('')
       setNewGameOpponent('')
+      setNewGameVenue('home')
       setShowAddForm(false)
       router.push(`/team/games/${newGame.id}`)
     } catch (err: any) {
@@ -201,6 +204,21 @@ export default function GamesPage() {
                         required
                       />
                     </div>
+                    <div>
+                      <label htmlFor="venue" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Venue *
+                      </label>
+                      <select
+                        id="venue"
+                        value={newGameVenue}
+                        onChange={(e) => setNewGameVenue(e.target.value as 'home' | 'away')}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                        required
+                      >
+                        <option value="home">Home</option>
+                        <option value="away">Away</option>
+                      </select>
+                    </div>
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleAddGame(team.id)}
@@ -215,6 +233,7 @@ export default function GamesPage() {
                           setNewGameDate('')
                           setNewGameLocation('')
                           setNewGameOpponent('')
+                          setNewGameVenue('home')
                           setError('')
                         }}
                         className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors"
@@ -266,6 +285,9 @@ export default function GamesPage() {
                                   minute: '2-digit',
                                 })}
                                 <span className="ml-2">• {game.location}</span>
+                                <span className="ml-2 text-gray-700">
+                                  • {game.venue === 'away' ? 'Away' : 'Home'}
+                                </span>
                                 <span className="ml-2">• vs {game.opponent}</span>
                               </div>
                             </div>

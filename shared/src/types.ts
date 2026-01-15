@@ -27,6 +27,9 @@ export interface Game {
   id: string;
   teamId: string;
   date: string; // ISO date string
+  location: string;
+  opponent: string;
+  venue: 'home' | 'away';
   attendance: string[]; // player_ids present
   schedule?: Schedule;
   createdAt: string;

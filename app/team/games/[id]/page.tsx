@@ -21,6 +21,7 @@ export default function GameDetailPage() {
   const [editGameDate, setEditGameDate] = useState('')
   const [editGameLocation, setEditGameLocation] = useState('')
   const [editGameOpponent, setEditGameOpponent] = useState('')
+  const [editGameVenue, setEditGameVenue] = useState<'home' | 'away'>('home')
   const [savingGame, setSavingGame] = useState(false)
   const [exportingDoc, setExportingDoc] = useState(false)
   const [hasAdminPin, setHasAdminPin] = useState(false)
@@ -111,6 +112,7 @@ export default function GameDetailPage() {
       setEditGameDate(`${year}-${month}-${day}T${hours}:${minutes}`)
       setEditGameLocation(gameData.location || '')
       setEditGameOpponent(gameData.opponent || '')
+      setEditGameVenue(gameData.venue === 'away' ? 'away' : 'home')
     } catch (err) {
       console.error('Error loading game data:', err)
       setError('Failed to load game data')
@@ -202,6 +204,7 @@ export default function GameDetailPage() {
             date: editGameDate,
             location: editGameLocation,
             opponent: editGameOpponent,
+            venue: editGameVenue,
           }),
         }
       )
@@ -354,6 +357,7 @@ export default function GameDetailPage() {
                   minute: '2-digit',
                 })}
                 <span className="ml-2">• {game.location}</span>
+                <span className="ml-2">• {game.venue === 'away' ? 'Away' : 'Home'}</span>
                 <span className="ml-2 font-semibold text-gray-900">• vs {game.opponent}</span>
               </p>
             </div>
@@ -440,6 +444,21 @@ export default function GameDetailPage() {
                           />
                         </div>
                         <div>
+                          <label htmlFor="edit-venue" className="block text-sm font-semibold text-gray-900 mb-2">
+                            Venue *
+                          </label>
+                          <select
+                            id="edit-venue"
+                            value={editGameVenue}
+                            onChange={(e) => setEditGameVenue(e.target.value as 'home' | 'away')}
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
+                            required
+                          >
+                            <option value="home">Home</option>
+                            <option value="away">Away</option>
+                          </select>
+                        </div>
+                        <div>
                           <label htmlFor="edit-opponent" className="block text-sm font-semibold text-gray-900 mb-2">
                             Opponent *
                           </label>
@@ -474,6 +493,7 @@ export default function GameDetailPage() {
                               setEditGameDate(`${year}-${month}-${day}T${hours}:${minutes}`)
                               setEditGameLocation(game.location || '')
                               setEditGameOpponent(game.opponent || '')
+                              setEditGameVenue(game.venue === 'away' ? 'away' : 'home')
                               setError('')
                             }}
                             className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 font-medium transition-colors"
@@ -510,6 +530,12 @@ export default function GameDetailPage() {
                           <div>
                             <span className="text-sm font-semibold text-gray-600">Location:</span>
                             <span className="ml-2 text-gray-900 font-medium">{game.location}</span>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-gray-600">Venue:</span>
+                            <span className="ml-2 text-gray-900 font-medium">
+                              {game.venue === 'away' ? 'Away' : 'Home'}
+                            </span>
                           </div>
                           <div>
                             <span className="text-sm font-semibold text-gray-600">Opponent:</span>

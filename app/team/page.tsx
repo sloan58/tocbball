@@ -143,6 +143,9 @@ export default function TeamPage() {
                           {new Date(game.date).toLocaleDateString()}
                         </span>
                         <span className="ml-2 text-sm text-gray-600">• {game.location}</span>
+                        <span className="ml-2 text-sm text-gray-600">
+                          • {game.venue === 'away' ? 'Away' : 'Home'}
+                        </span>
                         <span className="ml-2 text-sm text-gray-600">• vs {game.opponent}</span>
                         {hasSchedule && (
                           <span className="ml-3 text-xs text-green-600 font-medium">✓ Schedule ready</span>

@@ -52,12 +52,18 @@ enum CoachType {
   assistant
 }
 
+enum GameVenue {
+  home
+  away
+}
+
 model Game {
   id        String   @id @default(cuid())
   teamId    String
   date      DateTime
   location  String
   opponent  String
+  venue     GameVenue @default(home)
   attendance String  @default("[]") // JSON array of player IDs
   schedule  String?  // JSON schedule object
   stats     String?  // JSON stats object: { period: { playerId: { statName: count } } }
