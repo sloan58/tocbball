@@ -144,7 +144,7 @@ const tightenGymAttendantLine = (xml: string) => {
   const pattern = /<w:p[\s\S]*?Gym Attendant\/Scorekeeper[\s\S]*?<\/w:p>/
   if (!pattern.test(xml)) return xml
   return xml.replace(pattern, (paragraph) => {
-    let updated = paragraph.replace(/w:line="360"/g, 'w:line="300"')
+    let updated = paragraph.replace(/w:line="360"/g, 'w:line="320"')
     updated = updated.replace(/<w:sz w:val="18"\/>/g, '<w:sz w:val="17"/>')
     updated = updated.replace(/<w:szCs w:val="18"\/>/g, '<w:szCs w:val="17"/>')
     return updated
