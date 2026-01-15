@@ -63,6 +63,9 @@ export default function PlayersPage() {
     setSubmitting(true)
 
     try {
+      if (!newPlayerJersey.trim()) {
+        throw new Error('Jersey number is required')
+      }
       const response = await fetchWithAuth(
         `/api/teams/${teamId}/players`,
         teamId,
@@ -70,7 +73,7 @@ export default function PlayersPage() {
           method: 'POST',
           body: JSON.stringify({
             name: newPlayerName,
-            jerseyNumber: newPlayerJersey || null,
+            jerseyNumber: newPlayerJersey,
             level: newPlayerLevel || null,
             isPointGuard: newPlayerIsPointGuard,
           }),
@@ -110,6 +113,9 @@ export default function PlayersPage() {
     setSubmitting(true)
 
     try {
+      if (!editPlayerJersey.trim()) {
+        throw new Error('Jersey number is required')
+      }
       const response = await fetchWithAuth(
         `/api/teams/${teamId}/players/${playerId}`,
         teamId,
@@ -117,7 +123,7 @@ export default function PlayersPage() {
           method: 'PUT',
           body: JSON.stringify({
             name: editPlayerName,
-            jerseyNumber: editPlayerJersey || null,
+            jerseyNumber: editPlayerJersey,
             level: editPlayerLevel || null,
             isPointGuard: editPlayerIsPointGuard,
           }),
@@ -259,7 +265,7 @@ export default function PlayersPage() {
                     </div>
                     <div>
                       <label htmlFor="jersey" className="block text-sm font-semibold text-gray-900 mb-2">
-                        Jersey Number (optional)
+                        Jersey Number *
                       </label>
                       <input
                         id="jersey"
@@ -270,6 +276,7 @@ export default function PlayersPage() {
                         placeholder="23"
                         min="1"
                         max="99"
+                        required
                       />
                     </div>
                     <div>
@@ -365,8 +372,8 @@ export default function PlayersPage() {
                                 />
                               </div>
                               <div>
-                                <label htmlFor={`edit-jersey-${player.id}`} className="block text-sm font-semibold text-gray-900 mb-2">
-                                  Jersey Number (optional)
+                      <label htmlFor={`edit-jersey-${player.id}`} className="block text-sm font-semibold text-gray-900 mb-2">
+                        Jersey Number *
                                 </label>
                                 <input
                                   id={`edit-jersey-${player.id}`}
@@ -377,6 +384,7 @@ export default function PlayersPage() {
                                   placeholder="23"
                                   min="1"
                                   max="99"
+                        required
                                 />
                               </div>
                               <div>

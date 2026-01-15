@@ -26,6 +26,14 @@ export async function PUT(
     if (!name) {
       return NextResponse.json({ error: 'Player name required' }, { status: 400 })
     }
+    if (!jerseyNumber) {
+      return NextResponse.json({ error: 'Jersey number required' }, { status: 400 })
+    }
+
+    const jerseyValue = parseInt(jerseyNumber)
+    if (Number.isNaN(jerseyValue) || jerseyValue < 1 || jerseyValue > 99) {
+      return NextResponse.json({ error: 'Jersey number must be between 1 and 99' }, { status: 400 })
+    }
 
     // Validate level is 1-5 or null
     const levelValue = level ? parseInt(level) : null
@@ -37,7 +45,7 @@ export async function PUT(
       where: { id: playerId },
       data: {
         name,
-        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+        jerseyNumber: jerseyValue,
         level: levelValue,
         isPointGuard: Boolean(isPointGuard),
       },
