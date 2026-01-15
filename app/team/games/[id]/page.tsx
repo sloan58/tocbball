@@ -23,6 +23,7 @@ export default function GameDetailPage() {
   const [editGameOpponent, setEditGameOpponent] = useState('')
   const [savingGame, setSavingGame] = useState(false)
   const [exportingDoc, setExportingDoc] = useState(false)
+  const [hasAdminPin, setHasAdminPin] = useState(false)
   const [updatingPeriod, setUpdatingPeriod] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -55,6 +56,18 @@ export default function GameDetailPage() {
       }, 100)
     }
   }, [router, gameId])
+
+  useEffect(() => {
+    if (!team) return
+    const updatePinState = () => setHasAdminPin(!!getAdminPin(team.id))
+    updatePinState()
+    window.addEventListener('admin-pin-updated', updatePinState)
+    window.addEventListener('storage', updatePinState)
+    return () => {
+      window.removeEventListener('admin-pin-updated', updatePinState)
+      window.removeEventListener('storage', updatePinState)
+    }
+  }, [team])
 
   const loadGameData = async (teamId: string) => {
     try {
@@ -347,9 +360,9 @@ export default function GameDetailPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleExportDocx(team.id)}
-                disabled={exportingDoc || !getAdminPin(team.id)}
+                disabled={exportingDoc || !hasAdminPin}
                 className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 disabled:opacity-50 font-semibold transition-colors"
-                title={!getAdminPin(team.id) ? 'Enter admin PIN to export' : undefined}
+                title={!hasAdminPin ? 'Enter admin PIN to export' : undefined}
               >
                 {exportingDoc ? 'Exporting...' : 'Export Word Form'}
               </button>

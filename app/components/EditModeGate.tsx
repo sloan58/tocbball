@@ -40,6 +40,7 @@ export function EditModeGate({ teamId, children }: EditModeGateProps) {
       setIsEditMode(true)
       setShowPinPrompt(false)
       setPin('')
+      window.dispatchEvent(new Event('admin-pin-updated'))
     } catch (err) {
       setError('Invalid PIN. Please try again.')
     } finally {
