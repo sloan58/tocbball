@@ -29,7 +29,7 @@ model Player {
   name        String
   jerseyNumber Int?
   active      Boolean  @default(true)
-  grade       Int?     // 1-5 rating system (higher = more playing time preference)
+  level       Int?     // 1-5 rating system (higher = more playing time preference)
   isPointGuard Boolean @default(false)
   createdAt   DateTime @default(now())
   

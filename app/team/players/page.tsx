@@ -13,12 +13,12 @@ export default function PlayersPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerJersey, setNewPlayerJersey] = useState('')
-  const [newPlayerGrade, setNewPlayerGrade] = useState<number | ''>('')
+  const [newPlayerLevel, setNewPlayerLevel] = useState<number | ''>('')
   const [newPlayerIsPointGuard, setNewPlayerIsPointGuard] = useState(false)
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null)
   const [editPlayerName, setEditPlayerName] = useState('')
   const [editPlayerJersey, setEditPlayerJersey] = useState('')
-  const [editPlayerGrade, setEditPlayerGrade] = useState<number | ''>('')
+  const [editPlayerLevel, setEditPlayerLevel] = useState<number | ''>('')
   const [editPlayerIsPointGuard, setEditPlayerIsPointGuard] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -71,7 +71,7 @@ export default function PlayersPage() {
           body: JSON.stringify({
             name: newPlayerName,
             jerseyNumber: newPlayerJersey || null,
-            grade: newPlayerGrade || null,
+            level: newPlayerLevel || null,
             isPointGuard: newPlayerIsPointGuard,
           }),
         }
@@ -86,7 +86,7 @@ export default function PlayersPage() {
       setPlayers(sortPlayersByNumber([...players, newPlayer]))
       setNewPlayerName('')
       setNewPlayerJersey('')
-      setNewPlayerGrade('')
+      setNewPlayerLevel('')
       setNewPlayerIsPointGuard(false)
       setShowAddForm(false)
     } catch (err: any) {
@@ -100,7 +100,7 @@ export default function PlayersPage() {
     setEditingPlayerId(player.id)
     setEditPlayerName(player.name)
     setEditPlayerJersey(player.jerseyNumber?.toString() || '')
-    setEditPlayerGrade(player.grade || '')
+    setEditPlayerLevel(player.level || '')
     setEditPlayerIsPointGuard(player.isPointGuard || false)
     setError('')
   }
@@ -118,7 +118,7 @@ export default function PlayersPage() {
           body: JSON.stringify({
             name: editPlayerName,
             jerseyNumber: editPlayerJersey || null,
-            grade: editPlayerGrade || null,
+            level: editPlayerLevel || null,
             isPointGuard: editPlayerIsPointGuard,
           }),
         }
@@ -136,7 +136,7 @@ export default function PlayersPage() {
       setEditingPlayerId(null)
       setEditPlayerName('')
       setEditPlayerJersey('')
-      setEditPlayerGrade('')
+      setEditPlayerLevel('')
       setEditPlayerIsPointGuard(false)
     } catch (err: any) {
       setError(err.message || 'Failed to update player')
@@ -273,23 +273,23 @@ export default function PlayersPage() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="grade" className="block text-sm font-semibold text-gray-900 mb-2">
-                        Grade (1-5, optional)
+                      <label htmlFor="level" className="block text-sm font-semibold text-gray-900 mb-2">
+                        Level (1-5, optional)
                       </label>
                       <select
-                        id="grade"
-                        value={newPlayerGrade}
-                        onChange={(e) => setNewPlayerGrade(e.target.value ? parseInt(e.target.value) : '')}
+                        id="level"
+                        value={newPlayerLevel}
+                        onChange={(e) => setNewPlayerLevel(e.target.value ? parseInt(e.target.value) : '')}
                         className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
                       >
-                        <option value="">No grade</option>
+                        <option value="">No level</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
                         <option value="4">4</option>
                         <option value="5">5</option>
                       </select>
-                      <p className="text-xs text-gray-600 mt-1">Higher grade = preference for extra periods</p>
+                      <p className="text-xs text-gray-600 mt-1">Higher level = preference for extra periods</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <input
@@ -311,12 +311,12 @@ export default function PlayersPage() {
                       >
                         {submitting ? 'Adding...' : 'Add Player'}
                       </button>
-                      <button
+                        <button
                         onClick={() => {
                           setShowAddForm(false)
                           setNewPlayerName('')
                           setNewPlayerJersey('')
-                          setNewPlayerGrade('')
+                          setNewPlayerLevel('')
                           setNewPlayerIsPointGuard(false)
                           setError('')
                         }}
@@ -380,23 +380,23 @@ export default function PlayersPage() {
                                 />
                               </div>
                               <div>
-                                <label htmlFor={`edit-grade-${player.id}`} className="block text-sm font-semibold text-gray-900 mb-2">
-                                  Grade (1-5, optional)
+                                <label htmlFor={`edit-level-${player.id}`} className="block text-sm font-semibold text-gray-900 mb-2">
+                                  Level (1-5, optional)
                                 </label>
                                 <select
-                                  id={`edit-grade-${player.id}`}
-                                  value={editPlayerGrade}
-                                  onChange={(e) => setEditPlayerGrade(e.target.value ? parseInt(e.target.value) : '')}
+                                  id={`edit-level-${player.id}`}
+                                  value={editPlayerLevel}
+                                  onChange={(e) => setEditPlayerLevel(e.target.value ? parseInt(e.target.value) : '')}
                                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
                                 >
-                                  <option value="">No grade</option>
+                                  <option value="">No level</option>
                                   <option value="1">1</option>
                                   <option value="2">2</option>
                                   <option value="3">3</option>
                                   <option value="4">4</option>
                                   <option value="5">5</option>
                                 </select>
-                                <p className="text-xs text-gray-600 mt-1">Higher grade = preference for extra periods</p>
+                                <p className="text-xs text-gray-600 mt-1">Higher level = preference for extra periods</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <input
@@ -423,7 +423,7 @@ export default function PlayersPage() {
                                     setEditingPlayerId(null)
                                     setEditPlayerName('')
                                     setEditPlayerJersey('')
-                                    setEditPlayerGrade('')
+                                    setEditPlayerLevel('')
                                     setEditPlayerIsPointGuard(false)
                                     setError('')
                                   }}
@@ -441,9 +441,9 @@ export default function PlayersPage() {
                                 <span className="text-lg font-semibold text-gray-900">
                                   {player.name}
                                 </span>
-                                {player.grade && (
-                                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold" title="Grade">
-                                    Grade {player.grade}
+                                {player.level && (
+                                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm font-semibold" title="Level">
+                                    Level {player.level}
                                   </span>
                                 )}
                                 {player.isPointGuard && (

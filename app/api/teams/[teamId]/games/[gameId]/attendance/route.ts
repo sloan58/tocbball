@@ -13,22 +13,22 @@ const getMaxSegments = (playerCount: number): number | null => {
 
 const buildComparator = (
   totalCounts: Record<string, number>,
-  playerGradeMap: Record<string, number>
+  playerLevelMap: Record<string, number>
 ) => (a: string, b: string) => {
   if (totalCounts[a] !== totalCounts[b]) {
     return totalCounts[a] - totalCounts[b]
   }
-  const gradeA = playerGradeMap[a] || 0
-  const gradeB = playerGradeMap[b] || 0
-  if (gradeA !== gradeB) {
-    return gradeB - gradeA
+  const levelA = playerLevelMap[a] || 0
+  const levelB = playerLevelMap[b] || 0
+  if (levelA !== levelB) {
+    return levelB - levelA
   }
   return a.localeCompare(b)
 }
 
 const buildScheduleWithConstraints = (
   playerIds: string[],
-  playerGradeMap: Record<string, number>,
+  playerLevelMap: Record<string, number>,
   playerPGMap: Record<string, boolean>,
   periods: any[],
   lockedPeriodNumbers: Set<number>
@@ -51,7 +51,7 @@ const buildScheduleWithConstraints = (
     })
   })
 
-  const comparator = buildComparator(totalCounts, playerGradeMap)
+  const comparator = buildComparator(totalCounts, playerLevelMap)
   const hasAnyPG = playerIds.some(id => playerPGMap[id])
 
   const addPlayerToPeriod = (
@@ -166,7 +166,7 @@ function adjustSchedule(
   playersToRemove: string[],
   allAvailablePlayers: string[],
   startAdjustingFromPeriod: number = 1,
-  playerGradeMap: Record<string, number> = {},
+  playerLevelMap: Record<string, number> = {},
   playerPGMap: Record<string, boolean> = {}
 ): any {
   // Create a copy of the schedule
@@ -191,7 +191,7 @@ function adjustSchedule(
             (playerId: string) => !playersToRemove.includes(playerId) && allAvailablePlayers.includes(playerId)
           )
           
-          // Fill the slot with an available player (prioritize players with fewer total periods, then by grade)
+          // Fill the slot with an available player (prioritize players with fewer total periods, then by level)
           const availableForSub = allAvailablePlayers.filter(
             (id: string) => !periodData.players.includes(id) && !playersToRemove.includes(id)
           )
@@ -206,15 +206,15 @@ function adjustSchedule(
             })
           })
 
-          // Sort by total count to prioritize players with fewer periods, then by grade
+          // Sort by total count to prioritize players with fewer periods, then by level
           const sortedForSub = availableForSub.sort((a, b) => {
             const totalA = totalCounts[a] || 0
             const totalB = totalCounts[b] || 0
             if (totalA !== totalB) return totalA - totalB
-            // If counts are equal, prioritize higher grade
-            const gradeA = playerGradeMap[a] || 0
-            const gradeB = playerGradeMap[b] || 0
-            if (gradeA !== gradeB) return gradeB - gradeA
+            // If counts are equal, prioritize higher level
+            const levelA = playerLevelMap[a] || 0
+            const levelB = playerLevelMap[b] || 0
+            if (levelA !== levelB) return levelB - levelA
             return a.localeCompare(b)
           })
           
@@ -251,7 +251,7 @@ function adjustSchedule(
 
   return buildScheduleWithConstraints(
     allAvailablePlayers,
-    playerGradeMap,
+    playerLevelMap,
     playerPGMap,
     periods,
     lockedPeriodNumbers
@@ -263,7 +263,7 @@ function adjustSchedule(
  */
 function generateSchedule(
   playerIds: string[],
-  playerGradeMap: Record<string, number> = {},
+  playerLevelMap: Record<string, number> = {},
   playerPGMap: Record<string, boolean> = {}
 ) {
   if (playerIds.length === 0) {
@@ -278,7 +278,7 @@ function generateSchedule(
 
   return buildScheduleWithConstraints(
     playerIds,
-    playerGradeMap,
+    playerLevelMap,
     playerPGMap,
     periods,
     new Set()
@@ -319,15 +319,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid attendance data' }, { status: 400 })
     }
 
-    // Fetch player data to get grade and PG status
+    // Fetch player data to get level and PG status
     const players = await db.player.findMany({
       where: { teamId, id: { in: attendance } },
-      select: { id: true, grade: true, isPointGuard: true },
+      select: { id: true, level: true, isPointGuard: true },
     })
-    const playerGradeMap: Record<string, number> = {}
+    const playerLevelMap: Record<string, number> = {}
     const playerPGMap: Record<string, boolean> = {}
     players.forEach(p => {
-      playerGradeMap[p.id] = p.grade || 0
+      playerLevelMap[p.id] = p.level || 0
       playerPGMap[p.id] = p.isPointGuard || false
     })
 
@@ -342,7 +342,7 @@ export async function PUT(
     
     // If no schedule exists, generate one
     if (!currentSchedule || !currentSchedule.periods) {
-      updatedSchedule = generateSchedule(attendance, playerGradeMap, playerPGMap)
+      updatedSchedule = generateSchedule(attendance, playerLevelMap, playerPGMap)
     } else if (playersToAdd.length > 0 || playersToRemove.length > 0) {
       // Schedule exists and attendance changed - adjust the schedule
       // Find the first 'not_started' period to start adjusting from
@@ -362,7 +362,7 @@ export async function PUT(
           return status === 'started' || status === 'completed'
         })
         if (!hasStartedOrCompleted) {
-          updatedSchedule = generateSchedule(attendance, playerGradeMap, playerPGMap)
+          updatedSchedule = generateSchedule(attendance, playerLevelMap, playerPGMap)
         } else {
           updatedSchedule = adjustSchedule(
             currentSchedule,
@@ -370,7 +370,7 @@ export async function PUT(
             playersToRemove,
             attendance,
             startAdjustingFromPeriod,
-            playerGradeMap,
+            playerLevelMap,
             playerPGMap
           )
         }
@@ -381,7 +381,7 @@ export async function PUT(
           playersToRemove,
           attendance,
           startAdjustingFromPeriod,
-          playerGradeMap,
+          playerLevelMap,
           playerPGMap
         )
       }
