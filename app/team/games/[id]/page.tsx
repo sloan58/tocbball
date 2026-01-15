@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { EditModeGate } from '@/app/components/EditModeGate'
-import { fetchWithAuth } from '@/app/lib/api'
+import { fetchWithAuth, getAdminPin } from '@/app/lib/api'
 
 export default function GameDetailPage() {
   const params = useParams()
@@ -22,6 +22,7 @@ export default function GameDetailPage() {
   const [editGameLocation, setEditGameLocation] = useState('')
   const [editGameOpponent, setEditGameOpponent] = useState('')
   const [savingGame, setSavingGame] = useState(false)
+  const [exportingDoc, setExportingDoc] = useState(false)
   const [updatingPeriod, setUpdatingPeriod] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -237,6 +238,34 @@ export default function GameDetailPage() {
     }
   }
 
+  const handleExportDocx = async (teamId: string) => {
+    setError('')
+    setExportingDoc(true)
+    try {
+      const response = await fetchWithAuth(
+        `/api/teams/${teamId}/games/${gameId}/export`,
+        teamId
+      )
+      if (!response.ok) {
+        const errData = await response.json()
+        throw new Error(errData.error || 'Failed to export Word form')
+      }
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `playing-time-sheet-${new Date(game.date)
+        .toLocaleDateString('en-US')
+        .replace(/\//g, '-')}.docx`
+      link.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      setError(err.message || 'Failed to export Word form')
+    } finally {
+      setExportingDoc(false)
+    }
+  }
+
 
   if (loading || !team || !game) {
     return (
@@ -307,6 +336,16 @@ export default function GameDetailPage() {
                 <span className="ml-2">• {game.location}</span>
                 <span className="ml-2 font-semibold text-gray-900">• vs {game.opponent}</span>
               </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleExportDocx(team.id)}
+                disabled={exportingDoc || !getAdminPin(team.id)}
+                className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 disabled:opacity-50 font-semibold transition-colors"
+                title={!getAdminPin(team.id) ? 'Enter admin PIN to export' : undefined}
+              >
+                {exportingDoc ? 'Exporting...' : 'Export Word Form'}
+              </button>
             </div>
           </div>
         </div>
