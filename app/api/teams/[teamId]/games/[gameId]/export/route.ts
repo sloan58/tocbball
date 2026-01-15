@@ -23,8 +23,7 @@ const escapeRegExp = (value: string) =>
 
 const replaceAfterLabel = (xml: string, label: string, value: string) => {
   const pattern = new RegExp(
-    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
-    's'
+    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>[\\s\\S]*?<w:u[^>]*\\/?>[\\s\\S]*?<\\/w:rPr>)<w:tab\\/>`
   )
   if (!pattern.test(xml)) return xml
   return xml.replace(pattern, `$1<w:t xml:space="preserve"> ${escapeXml(value)}</w:t>`)
@@ -37,8 +36,7 @@ const replaceAfterLabelAtIndex = (
   index: number
 ) => {
   const pattern = new RegExp(
-    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
-    's'
+    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>[\\s\\S]*?<w:u[^>]*\\/?>[\\s\\S]*?<\\/w:rPr>)<w:tab\\/>`
   )
   let count = 0
   return xml.replace(pattern, (match, prefix) => {
@@ -59,8 +57,7 @@ const replaceAfterLabelAtIndexWithTab = (
   leadingSpace = true
 ) => {
   const pattern = new RegExp(
-    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>.*?<w:u[^>]*\\/?>.*?<\\/w:rPr>)<w:tab\\/>`,
-    's'
+    `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>[\\s\\S]*?<w:u[^>]*\\/?>[\\s\\S]*?<\\/w:rPr>)<w:tab\\/>`
   )
   let count = 0
   return xml.replace(pattern, (match, prefix) => {
@@ -97,7 +94,7 @@ const setCellText = (cellXml: string, text: string) => {
   const textTag = `<w:t${text.startsWith(' ') ? ' xml:space="preserve"' : ''}>${escapeXml(
     text
   )}</w:t>`
-  const textPattern = /<w:t(?=[\s>])[^>]*>.*?<\/w:t>/s
+  const textPattern = /<w:t(?=[\s>])[^>]*>[\s\S]*?<\/w:t>/
   if (textPattern.test(cellXml)) {
     if (!text) {
       return cellXml.replace(textPattern, '<w:t></w:t>')
