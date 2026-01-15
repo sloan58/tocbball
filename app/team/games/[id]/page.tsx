@@ -254,9 +254,16 @@ export default function GameDetailPage() {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `playing-time-sheet-${new Date(game.date)
-        .toLocaleDateString('en-US')
-        .replace(/\//g, '-')}.docx`
+      const datePart = new Date(game.date).toLocaleDateString('en-US').replace(/\//g, '-')
+      const toFilenamePart = (value: string) =>
+        value
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+      link.download = `${toFilenamePart(team.name)}-vs-${toFilenamePart(
+        game.opponent
+      )}-playing-time-${datePart}.docx`
       link.click()
       window.URL.revokeObjectURL(url)
     } catch (err: any) {

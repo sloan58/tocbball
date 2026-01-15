@@ -21,6 +21,13 @@ const escapeXml = (value: string) =>
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+const toFilenamePart = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 const replaceAfterLabel = (xml: string, label: string, value: string) => {
   const pattern = new RegExp(
     `(<w:t[^>]*>\\s*${escapeRegExp(label)}:<\\/w:t><\\/w:r><w:r[^>]*><w:rPr>[\\s\\S]*?<w:u[^>]*\\/?>[\\s\\S]*?<\\/w:rPr>)<w:tab\\/>`
@@ -292,12 +299,17 @@ export async function GET(
     const outputBuffer = zip.generate({ type: 'nodebuffer' })
     const body = new Uint8Array(outputBuffer)
 
+    const datePart = formattedDate.replace(/\//g, '-')
+    const filename = `${toFilenamePart(team.name)}-vs-${toFilenamePart(
+      game.opponent
+    )}-playing-time-${datePart}.docx`
+
     return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename=\"playing-time-sheet.docx\"`,
+        'Content-Disposition': `attachment; filename=\"${filename}\"`,
       },
     })
   } catch (error) {
