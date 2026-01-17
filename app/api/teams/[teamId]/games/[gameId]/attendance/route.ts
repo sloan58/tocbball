@@ -206,6 +206,21 @@ const buildScheduleWithConstraints = (
         slotsLeft[idx]--
       })
     }
+
+    // Fallback: if a period is still short, fill from any available players
+    quarterPeriods.forEach((period: any, idx: number) => {
+      if (slotsLeft[idx] <= 0) return
+      if (lockedPeriodNumbers.has(period.period)) return
+      const remaining = playerIds.filter((id) => !period.players.includes(id))
+      const useLateComparator = quarterIndex === 3
+      remaining.sort(useLateComparator ? lateComparator : comparator).forEach((id) => {
+        if (slotsLeft[idx] <= 0) return
+        period.players.push(id)
+        totalCounts[id]++
+        quarterCounts[id][quarterIndex]++
+        slotsLeft[idx]--
+      })
+    })
   })
 
   return { periods }
@@ -286,6 +301,18 @@ function adjustSchedule(
             }
             periodData.players.push(nextId)
             totalCounts[nextId]++
+          }
+
+          // Fallback: ensure 5 players even if maxSegments prevents it
+          if (periodData.players.length < PLAYERS_PER_PERIOD) {
+            const remaining = availableForSub.filter(
+              (id: string) => !periodData.players.includes(id)
+            )
+            remaining.forEach((id: string) => {
+              if (periodData.players.length >= PLAYERS_PER_PERIOD) return
+              periodData.players.push(id)
+              totalCounts[id]++
+            })
           }
         }
       }
