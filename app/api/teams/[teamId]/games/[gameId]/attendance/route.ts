@@ -102,6 +102,11 @@ const buildScheduleWithConstraints = (
     )
     if (quarterPeriods.some((p: any) => !p)) return
 
+    const maxLevel = Math.max(
+      0,
+      ...playerIds.map((id) => playerLevelMap[id] || 0)
+    )
+
     const slotsLeft = quarterPeriods.map((p: any, idx: number) => {
       if (lockedPeriodNumbers.has(periodNumbers[idx])) return 0
       return PLAYERS_PER_PERIOD - p.players.length
@@ -110,6 +115,14 @@ const buildScheduleWithConstraints = (
     const pickPeriodIndex = (playerId: string) => {
       const candidates = [0, 1].filter((idx) => slotsLeft[idx] > 0)
       if (candidates.length === 0) return -1
+      if (
+        quarterIndex === 3 &&
+        playerLevelMap[playerId] === maxLevel &&
+        slotsLeft[1] > 0 &&
+        !lockedPeriodNumbers.has(periodNumbers[1])
+      ) {
+        return 1
+      }
       if (playerPGMap[playerId] && hasAnyPG) {
         const noPg = candidates.filter(idx => !periodHasPG(quarterPeriods[idx]))
         if (noPg.length > 0) {
@@ -121,7 +134,7 @@ const buildScheduleWithConstraints = (
 
     // Phase A: ensure each player appears at least once in the quarter
     const unassigned = playerIds.filter(id => quarterCounts[id][quarterIndex] === 0)
-    unassigned.sort(comparator).forEach(playerId => {
+    unassigned.sort(quarterIndex === 3 ? lateComparator : comparator).forEach(playerId => {
       const idx = pickPeriodIndex(playerId)
       if (idx === -1) return
       const period = quarterPeriods[idx]
@@ -332,7 +345,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const { attendance } = await request.json()
+    const { attendance, regenerate } = await request.json()
     if (!Array.isArray(attendance)) {
       return NextResponse.json({ error: 'Invalid attendance data' }, { status: 400 })
     }
@@ -358,8 +371,10 @@ export async function PUT(
     
     let updatedSchedule = currentSchedule
     
-    // If no schedule exists, generate one
-    if (!currentSchedule || !currentSchedule.periods) {
+    if (regenerate) {
+      updatedSchedule = generateSchedule(attendance, playerLevelMap, playerPGMap)
+    } else if (!currentSchedule || !currentSchedule.periods) {
+      // If no schedule exists, generate one
       updatedSchedule = generateSchedule(attendance, playerLevelMap, playerPGMap)
     } else if (playersToAdd.length > 0 || playersToRemove.length > 0) {
       // Schedule exists and attendance changed - adjust the schedule

@@ -17,6 +17,7 @@ export default function GameDetailPage() {
   const [loading, setLoading] = useState(true)
   const [attendance, setAttendance] = useState<string[]>([])
   const [savingAttendance, setSavingAttendance] = useState(false)
+  const [regeneratingSchedule, setRegeneratingSchedule] = useState(false)
   const [editingGame, setEditingGame] = useState(false)
   const [editGameDate, setEditGameDate] = useState('')
   const [editGameLocation, setEditGameLocation] = useState('')
@@ -154,6 +155,34 @@ export default function GameDetailPage() {
       setError(err.message || 'Failed to save attendance')
     } finally {
       setSavingAttendance(false)
+    }
+  }
+
+  const handleRegenerateSchedule = async (teamId: string) => {
+    setError('')
+    setRegeneratingSchedule(true)
+    try {
+      const response = await fetchWithAuth(
+        `/api/teams/${teamId}/games/${gameId}/attendance`,
+        teamId,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ attendance, regenerate: true }),
+        }
+      )
+
+      if (!response.ok) {
+        const errData = await response.json()
+        throw new Error(errData.error || 'Failed to regenerate schedule')
+      }
+
+      const updatedGame = await response.json()
+      setGame(updatedGame)
+      setExpandedSections(prev => ({ ...prev, schedule: true }))
+    } catch (err: any) {
+      setError(err.message || 'Failed to regenerate schedule')
+    } finally {
+      setRegeneratingSchedule(false)
     }
   }
 
@@ -694,6 +723,15 @@ export default function GameDetailPage() {
                           )
                         })}
                       </div>
+                      {isEditMode && attendance.length > 0 && (
+                        <button
+                          onClick={() => handleRegenerateSchedule(team.id)}
+                          disabled={savingAttendance || regeneratingSchedule}
+                          className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 disabled:opacity-50 font-semibold transition-colors"
+                        >
+                          {regeneratingSchedule ? 'Regenerating...' : 'Regenerate Schedule'}
+                        </button>
+                      )}
                     </>
                   )}
                   </div>
