@@ -26,6 +26,21 @@ const buildComparator = (
   return a.localeCompare(b)
 }
 
+const buildLateComparator = (
+  totalCounts: Record<string, number>,
+  playerLevelMap: Record<string, number>
+) => (a: string, b: string) => {
+  const levelA = playerLevelMap[a] || 0
+  const levelB = playerLevelMap[b] || 0
+  if (levelA !== levelB) {
+    return levelB - levelA
+  }
+  if (totalCounts[a] !== totalCounts[b]) {
+    return totalCounts[a] - totalCounts[b]
+  }
+  return a.localeCompare(b)
+}
+
 const buildScheduleWithConstraints = (
   playerIds: string[],
   playerLevelMap: Record<string, number>,
@@ -51,7 +66,8 @@ const buildScheduleWithConstraints = (
     })
   })
 
-  const comparator = buildComparator(totalCounts, playerLevelMap)
+    const comparator = buildComparator(totalCounts, playerLevelMap)
+    const lateComparator = buildLateComparator(totalCounts, playerLevelMap)
   const hasAnyPG = playerIds.some(id => playerPGMap[id])
 
   const addPlayerToPeriod = (
@@ -117,12 +133,13 @@ const buildScheduleWithConstraints = (
     // Phase B: fill remaining slots, respecting max segments
     let remainingSlots = slotsLeft[0] + slotsLeft[1]
     while (remainingSlots > 0) {
+      const useLateComparator = quarterIndex === 3
       const candidates = playerIds.filter((id) => {
         if (maxSegments !== null && totalCounts[id] >= maxSegments) return false
         return true
       })
       if (candidates.length === 0) break
-      candidates.sort(comparator)
+      candidates.sort(useLateComparator ? lateComparator : comparator)
       let placed = false
       for (const playerId of candidates) {
         const idx = pickPeriodIndex(playerId)
@@ -206,15 +223,16 @@ function adjustSchedule(
             })
           })
 
-          // Sort by total count to prioritize players with fewer periods, then by level
+          const isLatePeriod = period >= 7
+          // For late periods, prioritize higher level, otherwise prioritize fewer periods then level
           const sortedForSub = availableForSub.sort((a, b) => {
             const totalA = totalCounts[a] || 0
             const totalB = totalCounts[b] || 0
-            if (totalA !== totalB) return totalA - totalB
-            // If counts are equal, prioritize higher level
             const levelA = playerLevelMap[a] || 0
             const levelB = playerLevelMap[b] || 0
-            if (levelA !== levelB) return levelB - levelA
+            if (isLatePeriod && levelA !== levelB) return levelB - levelA
+            if (totalA !== totalB) return totalA - totalB
+            if (!isLatePeriod && levelA !== levelB) return levelB - levelA
             return a.localeCompare(b)
           })
           
