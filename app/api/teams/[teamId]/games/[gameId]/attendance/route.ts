@@ -4,6 +4,20 @@ import { db } from '@/lib/db'
 const TOTAL_PERIODS = 8
 const PLAYERS_PER_PERIOD = 5
 
+const shouldAvoidThreeInRow = (playerCount: number) => playerCount >= 7
+
+const wouldCreateThreeInRow = (
+  periods: any[],
+  periodNumber: number,
+  playerId: string
+) => {
+  if (periodNumber < 3) return false
+  const prev1 = periods.find((p: any) => p.period === periodNumber - 1)
+  const prev2 = periods.find((p: any) => p.period === periodNumber - 2)
+  if (!prev1 || !prev2) return false
+  return prev1.players.includes(playerId) && prev2.players.includes(playerId)
+}
+
 const getMaxSegments = (playerCount: number): number | null => {
   if (playerCount === 10) return 4
   if (playerCount >= 8 && playerCount <= 9) return 5
@@ -96,6 +110,8 @@ const buildScheduleWithConstraints = (
     { quarterIndex: 3, periodNumbers: [7, 8] },
   ]
 
+  const applyStreakLimit = shouldAvoidThreeInRow(playerIds.length)
+
   quarters.forEach(({ quarterIndex, periodNumbers }) => {
     const quarterPeriods = periodNumbers.map((num) =>
       periods.find((p: any) => p.period === num)
@@ -115,6 +131,14 @@ const buildScheduleWithConstraints = (
     const pickPeriodIndex = (playerId: string) => {
       const candidates = [0, 1].filter((idx) => slotsLeft[idx] > 0)
       if (candidates.length === 0) return -1
+      if (applyStreakLimit) {
+        const withoutStreak = candidates.filter(
+          (idx) => !wouldCreateThreeInRow(periods, periodNumbers[idx], playerId)
+        )
+        if (withoutStreak.length > 0) {
+          candidates.splice(0, candidates.length, ...withoutStreak)
+        }
+      }
       if (
         quarterIndex === 3 &&
         playerLevelMap[playerId] === maxLevel &&
@@ -237,12 +261,18 @@ function adjustSchedule(
           })
 
           const isLatePeriod = period >= 7
+          const applyStreakLimit = shouldAvoidThreeInRow(allAvailablePlayers.length)
           // For late periods, prioritize higher level, otherwise prioritize fewer periods then level
           const sortedForSub = availableForSub.sort((a, b) => {
             const totalA = totalCounts[a] || 0
             const totalB = totalCounts[b] || 0
             const levelA = playerLevelMap[a] || 0
             const levelB = playerLevelMap[b] || 0
+            if (applyStreakLimit) {
+              const streakA = wouldCreateThreeInRow(periods, period, a) ? 1 : 0
+              const streakB = wouldCreateThreeInRow(periods, period, b) ? 1 : 0
+              if (streakA !== streakB) return streakA - streakB
+            }
             if (isLatePeriod && levelA !== levelB) return levelB - levelA
             if (totalA !== totalB) return totalA - totalB
             if (!isLatePeriod && levelA !== levelB) return levelB - levelA
